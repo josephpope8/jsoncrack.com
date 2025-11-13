@@ -5,6 +5,7 @@ import { CodeHighlight } from "@mantine/code-highlight";
 import type { NodeData } from "../../../types/graph";
 import useGraph from "../../editor/views/GraphView/stores/useGraph";
 import useJson from "../../../store/useJson";
+import useFile from "../../../store/useFile";
 
 // return object from json removing array and object fields
 const normalizeNodeData = (nodeRows: NodeData["text"]) => {
@@ -39,6 +40,7 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
   const nodeData = useGraph(state => state.selectedNode);
   const getJson = useJson(state => state.getJson);
   const setJson = useJson(state => state.setJson);
+  const setContents = useFile(state => state.setContents);
 
   const [editing, setEditing] = React.useState(false);
   const [editText, setEditText] = React.useState("");
@@ -134,7 +136,7 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
         if (typeof target !== "object" || target === null) {
           // replace direct value
           const updated = applyEdit(currentJson, nodeData.path, updatedObj);
-          setJson(updated);
+          setContents({ contents: updated, hasChanges: true });
           closeAndReset();
           return;
         }
@@ -151,7 +153,8 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
         keysToDelete.forEach(k => delete target[k]);
         Object.keys(updatedObj).forEach(k => (target[k] = updatedObj[k]));
 
-        setJson(JSON.stringify(root, null, 2));
+        const jsonStr = JSON.stringify(root, null, 2);
+        setContents({ contents: jsonStr, hasChanges: true });
         closeAndReset();
         return;
       }
@@ -166,7 +169,7 @@ export const NodeModal = ({ opened, onClose }: ModalProps) => {
       }
 
       const updated = applyEdit(currentJson, nodeData.path, parsedValue);
-      setJson(updated);
+      setContents({ contents: updated, hasChanges: true });
       closeAndReset();
     } catch (e: any) {
       setError(e?.message ?? String(e));
